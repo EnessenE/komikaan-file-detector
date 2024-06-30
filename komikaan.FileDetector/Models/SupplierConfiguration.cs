@@ -13,5 +13,5 @@ public class SupplierConfiguration
     public required string Name { get; set; }
     public required string Url { get; set; }
 
-    public DateTime LastUpdated { get; set; }
+    public DateTimeOffset LastUpdated { get; set; }
 }

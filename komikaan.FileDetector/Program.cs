@@ -72,6 +72,7 @@ namespace komikaan.FileDetector
         private static void AddSuppliers(IServiceCollection serviceCollection)
         {
             serviceCollection.AddHostedService<GTFSRetriever>();
+            serviceCollection.AddSingleton<HarvesterContext>();
             var supplierConfigurations = new List<SupplierConfiguration>();
             supplierConfigurations.Add(new SupplierConfiguration()
             {
