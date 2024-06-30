@@ -1,11 +1,5 @@
-﻿using ProtoBuf;
-using RestSharp.Authenticators;
-using RestSharp;
-using System.Net;
-using TransitRealtime;
-using NetTopologySuite.Index.HPRtree;
+﻿using RestSharp;
 using komikaan.FileDetector.Models;
-using System.Threading;
 using komikaan.FileDetector.Contexts;
 
 namespace komikaan.FileDetector.Services
@@ -13,54 +7,72 @@ namespace komikaan.FileDetector.Services
     public class GTFSRetriever : BackgroundService
     {
         private readonly SupplierContext _supplierContext;
-        private ILogger<GTFSRetriever> _logger;
+        private readonly ILogger<GTFSRetriever> _logger;
+        private readonly HarvesterContext _harvesterContext;
 
-        public GTFSRetriever(ILogger<GTFSRetriever> logger, SupplierContext supplierContext)
+        public GTFSRetriever(ILogger<GTFSRetriever> logger, SupplierContext supplierContext, HarvesterContext harvesterContext)
         {
             _logger = logger;
             _supplierContext = supplierContext;
+            _harvesterContext = harvesterContext;
         }
 
-        public async Task StartAsync(CancellationToken cancellationToken)
+        public override async Task StartAsync(CancellationToken cancellationToken)
         {
+            _logger.LogInformation("Staretd the gtfs retriever!");
+            await _harvesterContext.StartAsync(cancellationToken);
             await base.StartAsync(cancellationToken);
         }
 
-        public Task StopAsync(CancellationToken cancellationToken)
+        public override async Task StopAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Started the gtfs retriever!");
-            return Task.CompletedTask;
+            _logger.LogInformation("Stopped the gtfs retriever!");
+            await base.StopAsync(cancellationToken);
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            var supplierConfigurations = GetSupplierConfigs();   
+            var supplierConfigurations = GetSupplierConfigs();
             _logger.LogInformation("Starting going through suppliers");
             foreach (var supplier in supplierConfigurations)
                 using (_logger.BeginScope(supplier.Name))
                 {
-                    var options = new RestClientOptions("https://api.reasulus.nl/v1/stats/all");
-                    var client = new RestClient(options);
-                    var request = new RestRequest();
-                    _logger.LogInformation("Request generated towards {url}", supplier.Url);
-                    // The cancellation token comes from the caller. You can still make a call without it.
-                    var response = await client.GetAsync(request, cancellationToken);
-
-                    var lastModified = response.Headers?.FirstOrDefault(header => string.Equals(header.Name, "last-modified", StringComparison.InvariantCultureIgnoreCase));
-
-
-                    if (lastModified != null && lastModified.Value != null)
+                    if (supplier.RetrievalType == Enums.RetrievalType.REST)
                     {
-                        _logger.LogInformation("Last modified is currently {data}", DateTime.Parse(lastModified.Value.ToString()));
+                        var options = new RestClientOptions(supplier.Url);
+                        var client = new RestClient(options);
+                        var request = new RestRequest() { Method = Method.Head};
+                        _logger.LogInformation("Request generated towards {url}", supplier.Url);
+                        // The cancellation token comes from the caller. You can still make a call without it.
+                        var response = await client.ExecuteAsync(request, cancellationToken);
+
+                        _logger.LogInformation("Got response: {status}", response.StatusCode);
+                        _logger.LogInformation("Got {headers}/{contentHeaders} headers", response.Headers?.Count, response.ContentHeaders?.Count);
+                        var lastModifiedHeader = response.ContentHeaders?.FirstOrDefault(header => string.Equals(header.Name, "last-modified", StringComparison.InvariantCultureIgnoreCase));
+
+                        var lastModified = DateTime.UtcNow - TimeSpan.FromHours(6);
+
+                        if (lastModifiedHeader != null && lastModifiedHeader.Value != null)
+                        {
+                            _logger.LogInformation("Last modified is currently {data}", DateTime.Parse(lastModifiedHeader.Value.ToString()));
+                            lastModified = DateTime.Parse(lastModifiedHeader.Value.ToString());
+                        }
+                        else
+                        {
+                            _logger.LogInformation("No last modified header found (or it was empty). Assuming last modified is an abritrary 6 hours ago.");
+                        }
+
+                        if (lastModified >= supplier.LastUpdated)
+                        {
+                            _logger.LogInformation("A new file has been detected!");
+                            await NotifyHarverster(supplier);
+
+                        }
                     }
                     else
                     {
-                        _logger.LogInformation("No last modified header found (or it was empty). Assuming its been updated");
+                        _logger.LogWarning("Not supported, bye!");
                     }
-
-                    _logger.LogInformation("Got a response!");
-                    _logger.LogInformation("Code: {0}", response.StatusCode);
-                    await NotifyHarverster(supplier);
                 }
             _logger.LogInformation("Finished going through suppliers");
         }
@@ -70,10 +82,10 @@ namespace komikaan.FileDetector.Services
             return _supplierContext.SupplierConfigurations.ToList();
         }
 
-        private Task NotifyHarverster(SupplierConfiguration supplier)
+        private async Task NotifyHarverster(SupplierConfiguration supplier)
         {
-            _logger.LogWarning("Harverster implementation not created. Please fix.");
-            return Task.CompletedTask;
+            _logger.LogInformation("Notifying a harverster");
+            await _harvesterContext.SendMessageAsync(supplier);
         }
     }
 }
