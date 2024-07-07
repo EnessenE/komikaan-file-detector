@@ -1,4 +1,4 @@
-﻿using komikaan.FileDetector.Models;
+﻿using komikaan.Common.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace komikaan.FileDetector.Contexts

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using komikaan.FileDetector.Contexts;
@@ -11,9 +12,11 @@ using komikaan.FileDetector.Contexts;
 namespace komikaan.FileDetector.Migrations
 {
     [DbContext(typeof(SupplierContext))]
-    partial class SupplierContextModelSnapshot : ModelSnapshot
+    [Migration("20240702203734_Mappings")]
+    partial class Mappings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -32,10 +35,6 @@ namespace komikaan.FileDetector.Migrations
                     b.Property<int>("DataType")
                         .HasColumnType("integer")
                         .HasColumnName("data_type");
-
-                    b.Property<bool>("DownloadPending")
-                        .HasColumnType("boolean")
-                        .HasColumnName("download_pending");
 
                     b.Property<DateTimeOffset>("LastUpdated")
                         .HasColumnType("timestamp with time zone")
