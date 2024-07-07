@@ -16,7 +16,7 @@ namespace komikaan.FileDetector.Contexts
             _channel = connection.CreateModel();
 
 
-            _channel.ExchangeDeclare("harvester-notifications", "direct", durable: true);
+            _channel.ExchangeDeclare("harvester-notifications", ExchangeType.Direct, durable: true);
             _channel.QueueDeclare(queue: "harvesters",
                                  durable: true,
                                  exclusive: false,
@@ -35,7 +35,7 @@ namespace komikaan.FileDetector.Contexts
 
             var rawMessage = JsonSerializer.Serialize(message, options);
             var body = Encoding.UTF8.GetBytes(rawMessage);
-            _channel.BasicPublish(exchange: string.Empty,
+            _channel.BasicPublish(exchange: "harvester-notifications",
                                  routingKey: "harvester",
                                  basicProperties: null,
                                  body: body);

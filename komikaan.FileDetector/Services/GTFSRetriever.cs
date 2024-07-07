@@ -1,6 +1,7 @@
 ﻿using RestSharp;
 using komikaan.FileDetector.Contexts;
 using komikaan.Common.Models;
+using Z.EntityFramework.Plus;
 
 namespace komikaan.FileDetector.Services
 {
@@ -37,7 +38,10 @@ namespace komikaan.FileDetector.Services
             var interval = _config.GetValue<TimeSpan>("WorkInterval");
             while (true)
             {
+
                 _logger.LogInformation("Starting a process cycle");
+                _supplierContext.BulkSynchronize(_supplierContext.SupplierConfigurations);
+                _logger.LogInformation("Sync complete");
                 await ProcessSuppliers(cancellationToken);
                 _logger.LogInformation("Finished, waiting for the interval of {time}", interval);
                 await Task.Delay(interval, cancellationToken);
@@ -125,41 +129,3 @@ namespace komikaan.FileDetector.Services
         }
     }
 }
-
-
-//_supplierConfigurations.Add(new SupplierConfiguration()
-//{
-//    DataType = SupplierType.GTFS,
-//    RetrievalType = RetrievalType.REST,
-//    Name = "OpenOV",
-//    Url = "C:\\Users\\maile\\Downloads\\gtfs-nl.zip"
-//});
-//_supplierConfigurations.Add(new SupplierConfiguration()
-//{
-//    DataType = SupplierType.GTFS,
-//    RetrievalType = RetrievalType.REST,
-//    Name = "flixbus",
-//    Url = "C:\\Users\\maile\\Downloads\\flixbus.zip"
-//});
-//_supplierConfigurations.Add(new SupplierConfiguration()
-//{
-//    DataType = SupplierType.GTFS,
-//    RetrievalType = RetrievalType.REST,
-//    Name = "iledefrance",
-//    Url = "C:\\Users\\maile\\Downloads\\IDFM-gtfs.zip"
-//});
-//_supplierConfigurations.Add(new SupplierConfiguration()
-//{
-//    DataType = SupplierType.GTFS,
-//    RetrievalType = RetrievalType.REST,
-//    Name = "NMBS",
-//    Url = "C:\\Users\\maile\\Downloads\\NMBS.zip"
-//});
-//_supplierConfigurations.Add(new SupplierConfiguration()
-//{
-//    DataType = SupplierType.GTFS,
-//    RetrievalType = RetrievalType.REST,
-//    Name = "DeLijn",
-//    Url = "C:\\Users\\maile\\Downloads\\de_lijn-gtfs.zip"
-//}
-//);
