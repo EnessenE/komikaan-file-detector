@@ -1,8 +1,6 @@
 using System.Reflection;
 using komikaan.FileDetector.Contexts;
-using komikaan.FileDetector.Enums;
 using komikaan.FileDetector.Helpers;
-using komikaan.FileDetector.Models;
 using komikaan.FileDetector.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -73,52 +71,6 @@ namespace komikaan.FileDetector
         {
             serviceCollection.AddHostedService<GTFSRetriever>();
             serviceCollection.AddSingleton<HarvesterContext>();
-            var supplierConfigurations = new List<SupplierConfiguration>();
-            supplierConfigurations.Add(new SupplierConfiguration()
-            {
-                DataType = SupplierType.GTFS,
-                RetrievalType = RetrievalType.REST,
-                Name = "OpenOV",
-                Url = "C:\\Users\\maile\\Downloads\\gtfs-nl.zip",
-                PollingRate = TimeSpan.FromHours(6),
-            }); ;
-            supplierConfigurations.Add(new SupplierConfiguration()
-            {
-                DataType = SupplierType.GTFS,
-                RetrievalType = RetrievalType.REST,
-                Name = "flixbus",
-                Url = "C:\\Users\\maile\\Downloads\\flixbus.zip",
-                PollingRate = TimeSpan.FromHours(6)
-            });
-            supplierConfigurations.Add(new SupplierConfiguration()
-            {
-                DataType = SupplierType.GTFS,
-                RetrievalType = RetrievalType.REST,
-                Name = "iledefrance",
-                Url = "C:\\Users\\maile\\Downloads\\IDFM-gtfs.zip",
-                PollingRate = TimeSpan.FromHours(6)
-            });
-            supplierConfigurations.Add(new SupplierConfiguration()
-            {
-                DataType = SupplierType.GTFS,
-                RetrievalType = RetrievalType.REST,
-                Name = "NMBS",
-                Url = "C:\\Users\\maile\\Downloads\\NMBS.zip",
-                PollingRate = TimeSpan.FromHours(6)
-            });
-            supplierConfigurations.Add(new SupplierConfiguration()
-            {
-                DataType = SupplierType.GTFS,
-                RetrievalType = RetrievalType.REST,
-                Name = "DeLijn",
-                Url = "C:\\Users\\maile\\Downloads\\de_lijn-gtfs.zip",
-                PollingRate = TimeSpan.FromHours(6)
-            }
-            );
-            foreach ( var supplierConfiguration in supplierConfigurations)
-            {
-                serviceCollection.AddSingleton( supplierConfiguration );
-            }
         }
     }
 }

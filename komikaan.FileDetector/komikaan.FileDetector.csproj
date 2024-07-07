@@ -31,4 +31,8 @@
     <PackageReference Include="Z.EntityFramework.Extensions.EFCore" Version="8.103.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\komikaan-common\komikaan.Common.csproj" />
+  </ItemGroup>
+
 </Project>
