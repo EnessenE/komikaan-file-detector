@@ -45,11 +45,11 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: komikaan/Dockerfile
+          file: komikaan.FileDetector/Dockerfile
           pull: true
           push: true
           cache-from: type=registry,ref=enes1/komikaan-filedetector:latest
           cache-to: type=inline
           tags: |
-            enes1/komikaan:latest
-            enes1/komikaan:${{steps.api-version.outputs.version}}
+            enes1/komikaan-filedetector:latest
+            enes1/komikaan-filedetector:${{steps.api-version.outputs.version}}
