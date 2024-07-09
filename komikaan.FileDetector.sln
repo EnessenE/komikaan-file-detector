@@ -5,8 +5,6 @@ VisualStudioVersion = 17.8.34322.80
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "komikaan.FileDetector", "komikaan.FileDetector\komikaan.FileDetector.csproj", "{7D62762D-B1FA-4916-A114-25A5EF28F77E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "komikaan.Common", "..\komikaan-common\komikaan.Common.csproj", "{6874AE93-34BE-48D6-BC78-846E9E411C3D}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,10 +15,6 @@ Global
 		{7D62762D-B1FA-4916-A114-25A5EF28F77E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7D62762D-B1FA-4916-A114-25A5EF28F77E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7D62762D-B1FA-4916-A114-25A5EF28F77E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6874AE93-34BE-48D6-BC78-846E9E411C3D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6874AE93-34BE-48D6-BC78-846E9E411C3D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6874AE93-34BE-48D6-BC78-846E9E411C3D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6874AE93-34BE-48D6-BC78-846E9E411C3D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
