@@ -55,23 +55,35 @@ namespace komikaan.FileDetector.Services
             foreach (var supplier in supplierConfigurations)
                 using (_logger.BeginScope(supplier.Name))
                 {
-                    if (!supplier.DownloadPending)
+                    try
                     {
-                        if (supplier.RetrievalType == Common.Enums.RetrievalType.REST)
-                        {
-                            await ProcessRestSupplier(supplier, cancellationToken);
-                        }
-                        else
-                        {
-                            _logger.LogWarning("Not supported, bye!");
-                        }
+                        await ProcessSupplier(supplier, cancellationToken);
                     }
-                    else
+                    catch(Exception ex)
                     {
-                        _logger.LogWarning("A download is pending for this supplier, ignored.");
+                        _logger.LogError(ex, "Unknown error while processing supplier");
                     }
                 }
             _logger.LogInformation("Finished going through suppliers");
+        }
+
+        private async Task ProcessSupplier(SupplierConfiguration supplier, CancellationToken cancellationToken)
+        {
+            if (!supplier.DownloadPending)
+            {
+                if (supplier.RetrievalType == Common.Enums.RetrievalType.REST)
+                {
+                    await ProcessRestSupplier(supplier, cancellationToken);
+                }
+                else
+                {
+                    _logger.LogWarning("Not supported, bye!");
+                }
+            }
+            else
+            {
+                _logger.LogWarning("A download is pending for this supplier, ignored.");
+            }
         }
 
         private async Task ProcessRestSupplier(SupplierConfiguration supplier, CancellationToken cancellationToken)

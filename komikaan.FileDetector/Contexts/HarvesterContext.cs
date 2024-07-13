@@ -27,13 +27,7 @@ namespace komikaan.FileDetector.Contexts
             var connection = factory.CreateConnection();
             _channel = connection.CreateModel();
 
-
             _channel.ExchangeDeclare("harvester-notifications", ExchangeType.Direct, durable: true);
-            _channel.QueueDeclare(queue: "harvesters",
-                                 durable: true,
-                                 exclusive: false,
-                                 autoDelete: false,
-                                 arguments: null);
 
             return Task.CompletedTask;
         }
@@ -49,7 +43,6 @@ namespace komikaan.FileDetector.Contexts
             var body = Encoding.UTF8.GetBytes(rawMessage);
             _channel.BasicPublish(exchange: "harvester-notifications",
                                  routingKey: "harvester",
-                                 basicProperties: null,
                                  body: body);
             return Task.CompletedTask;
         }
