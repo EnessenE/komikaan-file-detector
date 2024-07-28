@@ -40,12 +40,23 @@ namespace komikaan.FileDetector.Services
             {
 
                 _logger.LogInformation("Starting a process cycle");
-                _supplierContext.BulkSynchronize(_supplierContext.SupplierConfigurations);
+                await ReloadItemsAsync();
                 _logger.LogInformation("Sync complete");
                 await ProcessSuppliers(cancellationToken);
                 _logger.LogInformation("Finished, waiting for the interval of {time}", interval);
                 await Task.Delay(interval, cancellationToken);
             }
+        }
+
+        private async Task ReloadItemsAsync()
+        {
+            _logger.LogInformation("Reloading info");
+            var entitiesList = _supplierContext.ChangeTracker.Entries().ToList();
+            foreach (var entity in entitiesList)
+            {
+                await entity.ReloadAsync();
+            }
+            _logger.LogInformation("Reloaded info");
         }
 
         private async Task ProcessSuppliers(CancellationToken cancellationToken)
