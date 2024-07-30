@@ -130,6 +130,7 @@ namespace komikaan.FileDetector.Services
                     _logger.LogInformation("A new file has been detected! Notifying a harvester");
                     await NotifyHarverster(supplier);
                     supplier.DownloadPending = true;
+                    supplier.ImportId = Guid.NewGuid();
                     await _supplierContext.SaveChangesAsync();
                     _logger.LogInformation("Notified a harvester!");
                 }
