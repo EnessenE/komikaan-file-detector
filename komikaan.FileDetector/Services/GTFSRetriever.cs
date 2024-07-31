@@ -127,10 +127,10 @@ namespace komikaan.FileDetector.Services
 
                 if (lastModified >= supplier.LastUpdated)
                 {
+                    supplier.ImportId = Guid.NewGuid();
                     _logger.LogInformation("A new file has been detected! Notifying a harvester");
                     await NotifyHarverster(supplier);
                     supplier.DownloadPending = true;
-                    supplier.ImportId = Guid.NewGuid();
                     await _supplierContext.SaveChangesAsync();
                     _logger.LogInformation("Notified a harvester!");
                 }
