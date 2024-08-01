@@ -80,15 +80,22 @@ namespace komikaan.FileDetector.Services
 
         private async Task ProcessSupplier(SupplierConfiguration supplier, CancellationToken cancellationToken)
         {
-            if (!supplier.DownloadPending)
+            if (!supplier.DownloadPending )
             {
-                if (supplier.RetrievalType == Common.Enums.RetrievalType.REST)
+                if (DateTime.UtcNow - supplier.LastUpdated.ToUniversalTime() >= supplier.PollingRate)
                 {
-                    await ProcessRestSupplier(supplier, cancellationToken);
+                    if (supplier.RetrievalType == Common.Enums.RetrievalType.REST)
+                    {
+                        await ProcessRestSupplier(supplier, cancellationToken);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Not supported, bye!");
+                    }
                 }
                 else
                 {
-                    _logger.LogWarning("Not supported, bye!");
+                    _logger.LogWarning("Not outside of the interval. Ignoring");
                 }
             }
             else
