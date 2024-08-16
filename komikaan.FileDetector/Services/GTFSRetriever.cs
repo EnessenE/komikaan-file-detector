@@ -1,7 +1,6 @@
 ﻿using RestSharp;
 using komikaan.FileDetector.Contexts;
 using komikaan.Common.Models;
-using Z.EntityFramework.Plus;
 
 namespace komikaan.FileDetector.Services
 {
