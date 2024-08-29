@@ -38,7 +38,7 @@ namespace komikaan.FileDetector
 
             builder.Services.AddDbContext<SupplierContext>(options =>
             {
-                options.UseNpgsql(builder.Configuration.GetConnectionString("HarvestingTarget"), o => o.UseNetTopologySuite());
+                options.UseNpgsql(builder.Configuration.GetConnectionString("gtfs"), o => o.UseNetTopologySuite());
                 options.UseSnakeCaseNamingConvention();
                 options.ReplaceService<ISqlGenerationHelper, NpgsqlSqlGenerationLowercasingHelper>();
             }, optionsLifetime: ServiceLifetime.Singleton, contextLifetime: ServiceLifetime.Singleton);
