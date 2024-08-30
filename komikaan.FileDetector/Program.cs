@@ -43,6 +43,7 @@ namespace komikaan.FileDetector
                 options.ReplaceService<ISqlGenerationHelper, NpgsqlSqlGenerationLowercasingHelper>();
             }, optionsLifetime: ServiceLifetime.Singleton, contextLifetime: ServiceLifetime.Singleton);
 
+            builder.Services.AddHttpClient();
 
 
             AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);

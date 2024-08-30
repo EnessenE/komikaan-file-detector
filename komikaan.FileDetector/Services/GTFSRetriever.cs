@@ -1,6 +1,10 @@
 ﻿using RestSharp;
 using komikaan.FileDetector.Contexts;
 using komikaan.Common.Models;
+using System.Net.Http;
+using Azure.Core;
+using Microsoft.IdentityModel.Tokens;
+using System.Net;
 
 namespace komikaan.FileDetector.Services
 {
@@ -9,19 +13,23 @@ namespace komikaan.FileDetector.Services
         private readonly SupplierContext _supplierContext;
         private readonly ILogger<GTFSRetriever> _logger;
         private readonly HarvesterContext _harvesterContext;
-        private IConfiguration _config;
+        private readonly IConfiguration _config;
+        private readonly HttpClient _httpClient;
 
-        public GTFSRetriever(ILogger<GTFSRetriever> logger, SupplierContext supplierContext, HarvesterContext harvesterContext, IConfiguration config)
+        public GTFSRetriever(ILogger<GTFSRetriever> logger, SupplierContext supplierContext, HarvesterContext harvesterContext, IConfiguration config, HttpClient httpClient)
         {
             _logger = logger;
             _supplierContext = supplierContext;
             _harvesterContext = harvesterContext;
             _config = config;
+            _httpClient = httpClient;
         }
 
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("Started the gtfs retriever!");
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", "detector/reasulus.nl");
+
             await _harvesterContext.StartAsync(cancellationToken);
             await base.StartAsync(cancellationToken);
         }
@@ -69,7 +77,7 @@ namespace komikaan.FileDetector.Services
                     {
                         await ProcessSupplier(supplier, cancellationToken);
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         _logger.LogError(ex, "Unknown error while processing supplier");
                     }
@@ -79,9 +87,9 @@ namespace komikaan.FileDetector.Services
 
         private async Task ProcessSupplier(SupplierConfiguration supplier, CancellationToken cancellationToken)
         {
-            if (!supplier.DownloadPending )
+            if (!supplier.DownloadPending)
             {
-                if (DateTime.UtcNow - supplier.LastUpdated.ToUniversalTime() >= supplier.PollingRate)
+                if (supplier.LastChecked == null || DateTime.UtcNow - supplier.LastChecked!.Value.ToUniversalTime() >= supplier.PollingRate)
                 {
                     if (supplier.RetrievalType == Common.Enums.RetrievalType.REST)
                     {
@@ -105,47 +113,67 @@ namespace komikaan.FileDetector.Services
 
         private async Task ProcessRestSupplier(SupplierConfiguration supplier, CancellationToken cancellationToken)
         {
-            var options = new RestClientOptions(supplier.Url);
-            var client = new RestClient(options);
-            options.UserAgent = "detector/reasulus.nl";
-            var request = new RestRequest() { Method = Method.Head };
+            // The cancellation token comes from the caller. You can still make a call without it.            
+            var request = new HttpRequestMessage(HttpMethod.Get, supplier.Url);
+
+            if (!string.IsNullOrEmpty(supplier.ETag))
+            {
+                request.Headers.IfNoneMatch.Add(new System.Net.Http.Headers.EntityTagHeaderValue(supplier.ETag));
+            }
+
             _logger.LogInformation("Request generated towards {url}", supplier.Url);
-            // The cancellation token comes from the caller. You can still make a call without it.
-            var response = await client.ExecuteAsync(request, cancellationToken);
+            // This instructs HttpClient to not download the entire content
+            var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
 
             _logger.LogInformation("Got response: {status}", response.StatusCode);
-            _logger.LogInformation("Got {headers}/{contentHeaders} headers", response.Headers?.Count, response.ContentHeaders?.Count);
-            var lastModifiedHeader = response.ContentHeaders?.FirstOrDefault(header => string.Equals(header.Name, "last-modified", StringComparison.InvariantCultureIgnoreCase));
-
-            if (response.IsSuccessStatusCode)
+            _logger.LogInformation("Got {headers} headers", response.Headers?.Count());
+            
+            if (response.StatusCode == HttpStatusCode.NotModified)
             {
-                var lastModified = DateTime.UtcNow - TimeSpan.FromHours(6);
+                _logger.LogInformation("The resource has not changed.");
+            }
+            else if (response.IsSuccessStatusCode && !string.IsNullOrEmpty(supplier.ETag))
+            {
+                await NotifyHarvester(supplier);
+            }
+            else if (response.IsSuccessStatusCode)
+            {
+                var lastModifiedHeader = response.Content?.Headers?.LastModified;
+
+                var lastModified = DateTime.UtcNow - TimeSpan.FromHours(24);
 
 
-                if (lastModifiedHeader != null && lastModifiedHeader.Value != null)
+                if (lastModifiedHeader != null)
                 {
-                    _logger.LogInformation("Last modified is currently {data}", DateTime.Parse(lastModifiedHeader.Value.ToString()));
-                    lastModified = DateTime.Parse(lastModifiedHeader.Value.ToString());
+                    _logger.LogInformation("Last modified is currently {data}", lastModifiedHeader);
+                    lastModified = lastModifiedHeader!.Value.DateTime;
                 }
                 else
                 {
-                    _logger.LogInformation("No last modified header found (or it was empty). Assuming last modified is an abritrary 6 hours ago.");
+                    _logger.LogInformation("No last modified header found (or it was empty). Assuming last modified is an abritrary 24 hours ago.");
                 }
 
                 if (lastModified >= supplier.LastUpdated)
                 {
-                    supplier.ImportId = Guid.NewGuid();
-                    _logger.LogInformation("A new file has been detected! Notifying a harvester");
-                    await NotifyHarverster(supplier);
-                    supplier.DownloadPending = true;
-                    await _supplierContext.SaveChangesAsync();
-                    _logger.LogInformation("Notified a harvester!");
+                    await NotifyHarvester(supplier);
                 }
             }
             else
             {
-                _logger.LogError(response.ErrorException, "Call failed");
+                _logger.LogError("Failed, {code} - {phrase}", response.StatusCode, response.ReasonPhrase);
             }
+            supplier.LastChecked = DateTimeOffset.UtcNow;
+            await _supplierContext.SaveChangesAsync();
+        }
+
+        private async Task NotifyHarvester(SupplierConfiguration supplier)
+        {
+            supplier.ImportId = Guid.NewGuid();
+            _logger.LogInformation("A new file has been detected! Notifying a harvester");
+            await NotifyHarverster(supplier);
+            supplier.DownloadPending = true;
+            _logger.LogInformation("Notified a harvester!");
         }
 
         private IEnumerable<SupplierConfiguration> GetSupplierConfigs()
