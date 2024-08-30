@@ -163,6 +163,12 @@ namespace komikaan.FileDetector.Services
             {
                 _logger.LogError("Failed, {code} - {phrase}", response.StatusCode, response.ReasonPhrase);
             }
+            
+            var newETag = response.Headers?.ETag?.Tag;
+            if (!string.IsNullOrWhiteSpace(newETag)) { 
+                supplier.ETag = newETag;
+            }
+
             supplier.LastChecked = DateTimeOffset.UtcNow;
             await _supplierContext.SaveChangesAsync();
         }
