@@ -43,7 +43,7 @@ namespace komikaan.FileDetector.Services
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             var interval = _config.GetValue<TimeSpan>("WorkInterval");
-            while (true)
+            while (!cancellationToken.IsCancellationRequested)
             {
 
                 _logger.LogInformation("Starting a process cycle");
@@ -121,54 +121,65 @@ namespace komikaan.FileDetector.Services
                 request.Headers.IfNoneMatch.Add(new System.Net.Http.Headers.EntityTagHeaderValue(supplier.ETag));
             }
 
-            _logger.LogInformation("Request generated towards {url}", supplier.Url);
-            // This instructs HttpClient to not download the entire content
-            var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
-
-
-            _logger.LogInformation("Got response: {status}", response.StatusCode);
-            _logger.LogInformation("Got {headers} headers", response.Headers?.Count());
-            
-            if (response.StatusCode == HttpStatusCode.NotModified)
+            HttpResponseMessage? response = null;
+            try
             {
-                _logger.LogInformation("The resource has not changed.");
+                _logger.LogInformation("Request generated towards {url}", supplier.Url);
+                // This instructs HttpClient to not download the entire content
+                response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                _logger.LogInformation("Got response: {status}", response.StatusCode);
+                _logger.LogInformation("Got {headers} headers", response.Headers?.Count());
             }
-            else if (response.IsSuccessStatusCode && !string.IsNullOrEmpty(supplier.ETag))
+            catch (Exception ex)
             {
-                await NotifyHarvester(supplier);
+                _logger.LogError(ex, "Failed a supplier call");
             }
-            else if (response.IsSuccessStatusCode)
+
+            if (response != null)
             {
-                var lastModifiedHeader = response.Content?.Headers?.LastModified;
 
-                var lastModified = DateTime.UtcNow - TimeSpan.FromHours(24);
-
-
-                if (lastModifiedHeader != null)
+                if (response.StatusCode == HttpStatusCode.NotModified)
                 {
-                    _logger.LogInformation("Last modified is currently {data}", lastModifiedHeader);
-                    lastModified = lastModifiedHeader!.Value.DateTime;
+                    _logger.LogInformation("The resource has not changed.");
                 }
-                else
-                {
-                    _logger.LogInformation("No last modified header found (or it was empty). Assuming last modified is an abritrary 24 hours ago.");
-                }
-
-                if (lastModified >= supplier.LastUpdated)
+                else if (response.IsSuccessStatusCode && !string.IsNullOrEmpty(supplier.ETag))
                 {
                     await NotifyHarvester(supplier);
                 }
-            }
-            else
-            {
-                _logger.LogError("Failed, {code} - {phrase}", response.StatusCode, response.ReasonPhrase);
+                else if (response.IsSuccessStatusCode)
+                {
+                    var lastModifiedHeader = response.Content?.Headers?.LastModified;
+
+                    var lastModified = DateTime.UtcNow - TimeSpan.FromHours(24);
+
+
+                    if (lastModifiedHeader != null)
+                    {
+                        _logger.LogInformation("Last modified is currently {data}", lastModifiedHeader);
+                        lastModified = lastModifiedHeader!.Value.DateTime;
+                    }
+                    else
+                    {
+                        _logger.LogInformation("No last modified header found (or it was empty). Assuming last modified is an abritrary 24 hours ago.");
+                    }
+
+                    if (lastModified >= supplier.LastUpdated)
+                    {
+                        await NotifyHarvester(supplier);
+                    }
+                }
+                else
+                {
+                    _logger.LogError("Failed, {code} - {phrase}", response.StatusCode, response.ReasonPhrase);
+                }
+
+                var newETag = response.Headers?.ETag?.Tag;
+                if (!string.IsNullOrWhiteSpace(newETag))
+                {
+                    supplier.ETag = newETag;
+                }
             }
             
-            var newETag = response.Headers?.ETag?.Tag;
-            if (!string.IsNullOrWhiteSpace(newETag)) { 
-                supplier.ETag = newETag;
-            }
-
             supplier.LastChecked = DateTimeOffset.UtcNow;
             await _supplierContext.SaveChangesAsync();
         }
