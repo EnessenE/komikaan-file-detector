@@ -1,10 +1,10 @@
-using System.Reflection;
 using komikaan.FileDetector.Contexts;
 using komikaan.FileDetector.Helpers;
 using komikaan.FileDetector.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Serilog;
+using System.Reflection;
 
 namespace komikaan.FileDetector
 {
@@ -33,6 +33,7 @@ namespace komikaan.FileDetector
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            builder.Services.AddSingleton<GTFSContext>();
 
             AddSuppliers(builder.Services);
 

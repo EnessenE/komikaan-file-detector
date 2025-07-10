@@ -19,7 +19,7 @@ namespace komikaan.FileDetector.Contexts
         {
 
             var factory = new ConnectionFactory();
-
+            
             factory.HostName = _configuration.GetValue<string>("RabbitMQHost")!;
             factory.UserName = _configuration.GetValue<string>("RabbitMQUsername")!;
             factory.Password = _configuration.GetValue<string>("RabbitMQPassword")!;

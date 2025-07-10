@@ -15,14 +15,16 @@ namespace komikaan.FileDetector.Services
         private readonly HarvesterContext _harvesterContext;
         private readonly IConfiguration _config;
         private readonly HttpClient _httpClient;
+        private readonly GTFSContext _gtfsContext;
 
-        public GTFSRetriever(ILogger<GTFSRetriever> logger, SupplierContext supplierContext, HarvesterContext harvesterContext, IConfiguration config, HttpClient httpClient)
+        public GTFSRetriever(ILogger<GTFSRetriever> logger, SupplierContext supplierContext, HarvesterContext harvesterContext, IConfiguration config, HttpClient httpClient, GTFSContext gtfsContext)
         {
             _logger = logger;
             _supplierContext = supplierContext;
             _harvesterContext = harvesterContext;
             _config = config;
             _httpClient = httpClient;
+            _gtfsContext = gtfsContext;
         }
 
         public override async Task StartAsync(CancellationToken cancellationToken)
@@ -166,11 +168,13 @@ namespace komikaan.FileDetector.Services
                     if (lastModified >= supplier.LastUpdated)
                     {
                         await NotifyHarvester(supplier);
+                        await _gtfsContext.MarkAsPendingAsync(supplier);
                     }
                 }
                 else
                 {
                     _logger.LogError("Failed, {code} - {phrase}", response.StatusCode, response.ReasonPhrase);
+                    await _gtfsContext.MarkAsFailedAsync(supplier);
                 }
 
                 var newETag = response.Headers?.ETag?.Tag;
