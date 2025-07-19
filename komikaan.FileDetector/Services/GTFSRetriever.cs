@@ -204,7 +204,7 @@ namespace komikaan.FileDetector.Services
 
         private async Task NotifyHarverster(SupplierConfiguration supplier)
         {
-            _logger.LogInformation("Notifying a harverster");
+            _logger.LogInformation("Notifying a harvester");
             await _harvesterContext.SendMessageAsync(supplier);
         }
     }
