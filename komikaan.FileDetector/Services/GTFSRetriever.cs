@@ -30,7 +30,7 @@ namespace komikaan.FileDetector.Services
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("Started the gtfs retriever!");
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", "detector/reasulus.nl");
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", "detector/komikaan.nl");
 
             await _harvesterContext.StartAsync(cancellationToken);
             await base.StartAsync(cancellationToken);
