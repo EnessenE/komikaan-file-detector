@@ -1,26 +1,19 @@
-﻿using RestSharp;
-using komikaan.FileDetector.Contexts;
-using komikaan.Common.Models;
-using System.Net.Http;
-using Azure.Core;
-using Microsoft.IdentityModel.Tokens;
+﻿using komikaan.FileDetector.Contexts;
 using System.Net;
 
 namespace komikaan.FileDetector.Services
 {
     public class GTFSRetriever : BackgroundService
     {
-        private readonly SupplierContext _supplierContext;
         private readonly ILogger<GTFSRetriever> _logger;
         private readonly HarvesterContext _harvesterContext;
         private readonly IConfiguration _config;
         private readonly HttpClient _httpClient;
         private readonly GTFSContext _gtfsContext;
 
-        public GTFSRetriever(ILogger<GTFSRetriever> logger, SupplierContext supplierContext, HarvesterContext harvesterContext, IConfiguration config, HttpClient httpClient, GTFSContext gtfsContext)
+        public GTFSRetriever(ILogger<GTFSRetriever> logger, HarvesterContext harvesterContext, IConfiguration config, HttpClient httpClient, GTFSContext gtfsContext)
         {
             _logger = logger;
-            _supplierContext = supplierContext;
             _harvesterContext = harvesterContext;
             _config = config;
             _httpClient = httpClient;
@@ -47,36 +40,23 @@ namespace komikaan.FileDetector.Services
             var interval = _config.GetValue<TimeSpan>("WorkInterval");
             while (!cancellationToken.IsCancellationRequested)
             {
-
-                _logger.LogInformation("Starting a process cycle");
-                await ReloadItemsAsync();
-                _logger.LogInformation("Sync complete");
                 await ProcessSuppliers(cancellationToken);
                 _logger.LogInformation("Finished, waiting for the interval of {time}", interval);
                 await Task.Delay(interval, cancellationToken);
             }
         }
 
-        private async Task ReloadItemsAsync()
-        {
-            _logger.LogInformation("Reloading info");
-            var entitiesList = _supplierContext.ChangeTracker.Entries().ToList();
-            foreach (var entity in entitiesList)
-            {
-                await entity.ReloadAsync();
-            }
-            _logger.LogInformation("Reloaded info");
-        }
 
         private async Task ProcessSuppliers(CancellationToken cancellationToken)
         {
-            var supplierConfigurations = GetSupplierConfigs();
+            var supplierConfigurations = await _gtfsContext.GetAllSuppliersAsync();
             _logger.LogInformation("Starting going through suppliers");
             foreach (var supplier in supplierConfigurations)
                 using (_logger.BeginScope(supplier.Name))
                 {
                     try
                     {
+                        _logger.LogInformation("Starting");
                         await ProcessSupplier(supplier, cancellationToken);
                     }
                     catch (Exception ex)
@@ -87,7 +67,7 @@ namespace komikaan.FileDetector.Services
             _logger.LogInformation("Finished going through suppliers");
         }
 
-        private async Task ProcessSupplier(SupplierConfiguration supplier, CancellationToken cancellationToken)
+        private async Task ProcessSupplier(DatabaseSupplierConfiguration supplier, CancellationToken cancellationToken)
         {
             if (!supplier.DownloadPending)
             {
@@ -99,7 +79,7 @@ namespace komikaan.FileDetector.Services
                     }
                     else
                     {
-                        _logger.LogWarning("Not supported, bye!");
+                        _logger.LogWarning("Not supported as type was set to {type}, bye!", supplier.RetrievalType);
                     }
                 }
                 else
@@ -113,7 +93,7 @@ namespace komikaan.FileDetector.Services
             }
         }
 
-        private async Task ProcessRestSupplier(SupplierConfiguration supplier, CancellationToken cancellationToken)
+        private async Task ProcessRestSupplier(DatabaseSupplierConfiguration supplier, CancellationToken cancellationToken)
         {
             // The cancellation token comes from the caller. You can still make a call without it.            
             var request = new HttpRequestMessage(HttpMethod.Get, supplier.Url);
@@ -185,10 +165,9 @@ namespace komikaan.FileDetector.Services
             }
             
             supplier.LastChecked = DateTimeOffset.UtcNow;
-            await _supplierContext.SaveChangesAsync();
         }
 
-        private async Task NotifyHarvester(SupplierConfiguration supplier)
+        private async Task NotifyHarvester(DatabaseSupplierConfiguration supplier)
         {
             supplier.ImportId = Guid.NewGuid();
             _logger.LogInformation("A new file has been detected! Notifying a harvester");
@@ -197,12 +176,7 @@ namespace komikaan.FileDetector.Services
             _logger.LogInformation("Notified a harvester!");
         }
 
-        private IEnumerable<SupplierConfiguration> GetSupplierConfigs()
-        {
-            return _supplierContext.SupplierConfigurations.ToList();
-        }
-
-        private async Task NotifyHarverster(SupplierConfiguration supplier)
+        private async Task NotifyHarverster(DatabaseSupplierConfiguration supplier)
         {
             _logger.LogInformation("Notifying a harvester");
             await _harvesterContext.SendMessageAsync(supplier);

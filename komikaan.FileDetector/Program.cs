@@ -1,8 +1,5 @@
 using komikaan.FileDetector.Contexts;
-using komikaan.FileDetector.Helpers;
 using komikaan.FileDetector.Services;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using Serilog;
 using System.Reflection;
 
@@ -36,13 +33,6 @@ namespace komikaan.FileDetector
             builder.Services.AddSingleton<GTFSContext>();
 
             AddSuppliers(builder.Services);
-
-            builder.Services.AddDbContext<SupplierContext>(options =>
-            {
-                options.UseNpgsql(builder.Configuration.GetConnectionString("gtfs"), o => o.UseNetTopologySuite());
-                options.UseSnakeCaseNamingConvention();
-                options.ReplaceService<ISqlGenerationHelper, NpgsqlSqlGenerationLowercasingHelper>();
-            }, optionsLifetime: ServiceLifetime.Singleton, contextLifetime: ServiceLifetime.Singleton);
 
             builder.Services.AddHttpClient();
 

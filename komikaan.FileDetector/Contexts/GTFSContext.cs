@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using komikaan.Common.Enums;
 using komikaan.Common.Models;
 using Npgsql;
 using System.Data;
@@ -12,6 +13,8 @@ namespace komikaan.FileDetector.Contexts
 
         public GTFSContext(IConfiguration configuration, ILogger<GTFSContext> logger)
         {
+            Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
+
             _logger = logger;
             // Get the connection string from configuration
             var connectionString = configuration.GetConnectionString("gtfs");
@@ -19,25 +22,29 @@ namespace komikaan.FileDetector.Contexts
             // Build the NpgsqlDataSource
             var builder = new NpgsqlDataSourceBuilder(connectionString);
 
+            SqlMapper.AddTypeHandler(new IntEnumHandler<RetrievalType>());
+            SqlMapper.AddTypeHandler(new IntEnumHandler<SupplierType>());
+
             // Build the NpgsqlDataSource
             _dataSource = builder.Build();
         }
 
-        public async Task MarkAsPendingAsync(SupplierConfiguration config)
+        public async Task MarkAsPendingAsync(DatabaseSupplierConfiguration config)
         {
             using var dbConnection = _dataSource.CreateConnection();
 
             await dbConnection.ExecuteAsync(
-             @"CALL public.filedetector_mark_pending(@data_origin, @state)",
+             @"CALL public.filedetector_mark_pending(@data_origin, @state, @uuid)",
                 new
                 {
                     data_origin = config.Name,
-                    state = "Import pending"
+                    state = "Import pending",
+                    uuid = config.ImportId
                 },
                  commandType: CommandType.Text
              );
         }
-        public async Task MarkAsFailedAsync(SupplierConfiguration config)
+        public async Task MarkAsFailedAsync(DatabaseSupplierConfiguration config)
         {
             using var dbConnection = _dataSource.CreateConnection();
 
@@ -51,5 +58,30 @@ namespace komikaan.FileDetector.Contexts
                  commandType: CommandType.Text
              );
         }
+
+        internal async Task<IEnumerable<DatabaseSupplierConfiguration>> GetAllSuppliersAsync()
+        {
+            using var dbConnection = _dataSource.CreateConnection();
+
+            return await dbConnection.QueryAsync<DatabaseSupplierConfiguration>(@"SELECT * FROM public.filedetector_get_all_suppliers()");
+        }
+    }
+}
+
+public class IntEnumHandler<T> : SqlMapper.TypeHandler<T> where T : struct, Enum
+{
+    public override void SetValue(IDbDataParameter parameter, T value)
+        => parameter.Value = Convert.ToInt32(value);
+
+    public override T Parse(object value)
+    {
+        if (value is int intValue)
+            return (T)Enum.ToObject(typeof(T), intValue);
+
+        // handle nullable DB values if needed
+        if (value is long longValue)
+            return (T)Enum.ToObject(typeof(T), (int)longValue);
+
+        throw new DataException($"Cannot convert {value} to enum {typeof(T)}");
     }
 }
