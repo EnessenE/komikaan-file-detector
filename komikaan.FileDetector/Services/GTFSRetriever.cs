@@ -126,7 +126,7 @@ namespace komikaan.FileDetector.Services
                 }
                 else if (response.IsSuccessStatusCode && !string.IsNullOrEmpty(supplier.ETag))
                 {
-                    await NotifyHarvester(supplier);
+                    await ProcessNewUpdate(supplier);
                 }
                 else if (response.IsSuccessStatusCode)
                 {
@@ -147,8 +147,7 @@ namespace komikaan.FileDetector.Services
 
                     if (lastModified >= supplier.LastUpdated)
                     {
-                        await NotifyHarvester(supplier);
-                        await _gtfsContext.MarkAsPendingAsync(supplier);
+                        await ProcessNewUpdate(supplier);
                     }
                 }
                 else
@@ -167,12 +166,12 @@ namespace komikaan.FileDetector.Services
             supplier.LastChecked = DateTimeOffset.UtcNow;
         }
 
-        private async Task NotifyHarvester(DatabaseSupplierConfiguration supplier)
+        private async Task ProcessNewUpdate(DatabaseSupplierConfiguration supplier)
         {
-            supplier.ImportId = Guid.NewGuid();
             _logger.LogInformation("A new file has been detected! Notifying a harvester");
+            supplier.ImportId = Guid.NewGuid();
+            await _gtfsContext.MarkAsPendingAsync(supplier);
             await NotifyHarverster(supplier);
-            supplier.DownloadPending = true;
             _logger.LogInformation("Notified a harvester!");
         }
 
