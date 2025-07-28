@@ -34,12 +34,13 @@ namespace komikaan.FileDetector.Contexts
             using var dbConnection = _dataSource.CreateConnection();
 
             await dbConnection.ExecuteAsync(
-             @"CALL public.filedetector_mark_pending(@data_origin, @state, @uuid)",
+             @"CALL public.filedetector_mark_pending(@data_origin, @state, @uuid, @etag)",
                 new
                 {
                     data_origin = config.Name,
                     state = "Import pending",
-                    uuid = config.ImportId
+                    uuid = config.ImportId,
+                    etag = config.ETag
                 },
                  commandType: CommandType.Text
              );

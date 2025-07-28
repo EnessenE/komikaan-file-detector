@@ -120,6 +120,12 @@ namespace komikaan.FileDetector.Services
             if (response != null)
             {
 
+                var newETag = response.Headers?.ETag?.Tag;
+                if (!string.IsNullOrWhiteSpace(newETag))
+                {
+                    supplier.ETag = newETag;
+                }
+
                 if (response.StatusCode == HttpStatusCode.NotModified)
                 {
                     _logger.LogInformation("The resource has not changed.");
@@ -154,12 +160,6 @@ namespace komikaan.FileDetector.Services
                 {
                     _logger.LogError("Failed, {code} - {phrase}", response.StatusCode, response.ReasonPhrase);
                     await _gtfsContext.MarkAsFailedAsync(supplier);
-                }
-
-                var newETag = response.Headers?.ETag?.Tag;
-                if (!string.IsNullOrWhiteSpace(newETag))
-                {
-                    supplier.ETag = newETag;
                 }
             }
             
