@@ -170,6 +170,8 @@ namespace komikaan.FileDetector.Services
         {
             _logger.LogInformation("A new file has been detected! Notifying a harvester");
             supplier.ImportId = Guid.NewGuid();
+            supplier.QueuedImportId = Guid.NewGuid();
+            supplier.ImportRequestedAt = DateTimeOffset.UtcNow;
             await _gtfsContext.MarkAsPendingAsync(supplier);
             await NotifyHarverster(supplier);
             _logger.LogInformation("Notified a harvester!");

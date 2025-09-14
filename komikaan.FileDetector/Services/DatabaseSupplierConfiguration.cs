@@ -41,4 +41,6 @@ public class DatabaseSupplierConfiguration
     public TimeSpan LastDuration { get; set; } = TimeSpan.Zero;
 
     public Guid QueuedImportId { get; set; } = Guid.Empty;
+    public TimeSpan? DelayImportBy { get; set; }
+    public DateTimeOffset ImportRequestedAt { get; set; }
 }
