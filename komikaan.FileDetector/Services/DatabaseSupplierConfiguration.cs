@@ -43,4 +43,6 @@ public class DatabaseSupplierConfiguration
     public Guid QueuedImportId { get; set; } = Guid.Empty;
     public TimeSpan? DelayImportBy { get; set; }
     public DateTimeOffset ImportRequestedAt { get; set; }
+    public string? HeaderKey { get; set; }
+    public string? HeaderValue { get; set; }
 }

@@ -103,6 +103,10 @@ namespace komikaan.FileDetector.Services
                 request.Headers.IfNoneMatch.Add(new System.Net.Http.Headers.EntityTagHeaderValue(supplier.ETag));
             }
 
+            if (!string.IsNullOrWhiteSpace(supplier.HeaderKey)) {
+                request.Headers.Add(supplier.HeaderKey, supplier.HeaderValue);
+            }
+
             HttpResponseMessage? response = null;
             try
             {
