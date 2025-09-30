@@ -60,6 +60,21 @@ namespace komikaan.FileDetector.Contexts
              );
         }
 
+
+        public async Task MarkAsCheckedAsync(DatabaseSupplierConfiguration config)
+        {
+            using var dbConnection = _dataSource.CreateConnection();
+
+            await dbConnection.ExecuteAsync(
+             @"CALL public.filedetector_mark_checked(@data_origin)",
+                new
+                {
+                    data_origin = config.Name,
+                },
+                 commandType: CommandType.Text
+             );
+        }
+
         internal async Task<IEnumerable<DatabaseSupplierConfiguration>> GetAllSuppliersAsync()
         {
             using var dbConnection = _dataSource.CreateConnection();

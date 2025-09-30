@@ -26,7 +26,7 @@ public class DatabaseSupplierConfiguration
 
     public string? ETag { get; set; }
 
-    public DateTimeOffset? LastChecked { get; set; }
+    public DateTimeOffset? LastCheck { get; set; }
 
     public DateTimeOffset? LastCheckFailure { get; set; }
 

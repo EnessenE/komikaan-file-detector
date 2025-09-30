@@ -71,7 +71,7 @@ namespace komikaan.FileDetector.Services
         {
             if (!supplier.DownloadPending)
             {
-                if (supplier.LastChecked == null || DateTime.UtcNow - supplier.LastChecked!.Value.ToUniversalTime() >= supplier.PollingRate)
+                if (supplier.LastCheck == null || DateTime.UtcNow - supplier.LastCheck!.Value.ToUniversalTime() >= supplier.PollingRate)
                 {
                     if (supplier.RetrievalType == Common.Enums.RetrievalType.REST)
                     {
@@ -121,9 +121,9 @@ namespace komikaan.FileDetector.Services
                 _logger.LogError(ex, "Failed a supplier call");
             }
 
+            await _gtfsContext.MarkAsCheckedAsync(supplier);
             if (response != null)
             {
-
                 var newETag = response.Headers?.ETag?.Tag;
                 if (!string.IsNullOrWhiteSpace(newETag))
                 {
@@ -167,7 +167,7 @@ namespace komikaan.FileDetector.Services
                 }
             }
             
-            supplier.LastChecked = DateTimeOffset.UtcNow;
+            supplier.LastCheck = DateTimeOffset.UtcNow;
         }
 
         private async Task ProcessNewUpdate(DatabaseSupplierConfiguration supplier)
