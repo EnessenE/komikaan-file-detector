@@ -10,6 +10,7 @@ namespace komikaan.FileDetector.Services
         private readonly IConfiguration _config;
         private readonly HttpClient _httpClient;
         private readonly GTFSContext _gtfsContext;
+        private string _contactPoint;
 
         public GTFSRetriever(ILogger<GTFSRetriever> logger, HarvesterContext harvesterContext, IConfiguration config, HttpClient httpClient, GTFSContext gtfsContext)
         {
@@ -18,12 +19,13 @@ namespace komikaan.FileDetector.Services
             _config = config;
             _httpClient = httpClient;
             _gtfsContext = gtfsContext;
+            _contactPoint = Environment.GetEnvironmentVariable("Komikaan_ContactPoint") ?? throw new ArgumentNullException("_contactPoint");
         }
 
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("Started the gtfs retriever!");
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", "detector/komikaan.nl");
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", $"detector/komikaan.nl/{GetType().Assembly.GetName().Version} ({_contactPoint})");
 
             await _harvesterContext.StartAsync(cancellationToken);
             await base.StartAsync(cancellationToken);
