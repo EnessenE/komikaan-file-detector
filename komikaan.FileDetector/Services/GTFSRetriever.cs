@@ -19,7 +19,7 @@ namespace komikaan.FileDetector.Services
             _config = config;
             _httpClient = httpClient;
             _gtfsContext = gtfsContext;
-            _contactPoint = Environment.GetEnvironmentVariable("Komikaan_ContactPoint") ?? "enes@reasulus.nl"??throw new ArgumentNullException("_contactPoint");
+            _contactPoint = Environment.GetEnvironmentVariable("Komikaan_ContactPoint") ?? throw new ArgumentNullException("_contactPoint");
         }
 
         public override async Task StartAsync(CancellationToken cancellationToken)
