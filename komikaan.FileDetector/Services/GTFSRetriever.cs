@@ -175,7 +175,6 @@ namespace komikaan.FileDetector.Services
         private async Task ProcessNewUpdate(DatabaseSupplierConfiguration supplier)
         {
             _logger.LogInformation("A new file has been detected! Notifying a harvester");
-            supplier.ImportId = Guid.NewGuid();
             supplier.QueuedImportId = Guid.NewGuid();
             supplier.ImportRequestedAt = DateTimeOffset.UtcNow;
             await _gtfsContext.MarkAsPendingAsync(supplier);

@@ -18,7 +18,6 @@ public class DatabaseSupplierConfiguration
 
     public bool DownloadPending { get; set; } = false;
 
-    public Guid ImportId { get; set; } = Guid.Empty;
 
     public Guid LatestSuccesfullImportId { get; set; } = Guid.Empty;
 

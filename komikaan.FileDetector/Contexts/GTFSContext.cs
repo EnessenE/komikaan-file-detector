@@ -39,7 +39,7 @@ namespace komikaan.FileDetector.Contexts
                 {
                     data_origin = config.Name,
                     state = "Import pending",
-                    uuid = config.ImportId,
+                    uuid = config.QueuedImportId,
                     etag = config.ETag
                 },
                  commandType: CommandType.Text
