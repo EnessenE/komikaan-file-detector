@@ -51,19 +51,8 @@ namespace komikaan.FileDetector.Contexts
 
                 _channel = await _connection.CreateChannelAsync();
 
-                await _channel.ExchangeDeclareAsync("harvester-notifications", ExchangeType.Direct, durable: true);
-
-                await _channel.QueueDeclareAsync(
-                    queue: "harvesters",
-                    durable: true,
-                    exclusive: false,
-                    autoDelete: false,
-                    arguments: new Dictionary<string, object>
-                    {
-                        { "x-queue-type", "quorum" }
-                    }); 
-
-                await _channel.QueueBindAsync("harvesters", "harvester-notifications", "harvester");
+                await _channel.ExchangeDeclarePassiveAsync("harvester-notifications");
+                await _channel.QueueDeclarePassiveAsync(queue: "harvesters");
 
                 RabbitMQ.Client.Events.AsyncEventHandler<RabbitMQ.Client.Events.ShutdownEventArgs> asyncEventHandler = (sender, ea) =>
                 {
