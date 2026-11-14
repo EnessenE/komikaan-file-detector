@@ -9,4 +9,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Update from .NET 8 to .NET 10 (target framework and Docker base images)
 - Bump all NuGet dependencies to their latest versions
+- Remove unused EntityFrameworkCore.SqlServer.NetTopologySuite and NetTopologySuite.Core dependencies
 - RabbitMQ topology is now declared via the RabbitMQ operator; the app only passive-declares the exchange and queue
