@@ -91,8 +91,28 @@ namespace komikaan.FileDetector.Contexts
 
             var rawMessage = JsonSerializer.Serialize(message, options);
             var body = Encoding.UTF8.GetBytes(rawMessage);
+
+            var properties = new BasicProperties { Persistent = true };
+            if (message is DatabaseSupplierConfiguration { DelayImportBy: { } delay } supplier
+                && delay > TimeSpan.Zero)
+            {
+                // RabbitMQ 4.4+ holds the message in the (quorum) queue until this time,
+                // instead of the consumer delaying and requeueing it in a loop.
+                var deliveryTime = supplier.ImportRequestedAt + delay;
+                if (deliveryTime > DateTimeOffset.UtcNow)
+                {
+                    properties.Headers = new Dictionary<string, object?>
+                    {
+                        ["x-opt-delivery-time"] = deliveryTime.ToUnixTimeMilliseconds()
+                    };
+                    _logger.LogInformation("Delaying import request for {name} until {time:R}", supplier.Name, deliveryTime);
+                }
+            }
+
             await _channel.BasicPublishAsync(exchange: "harvester-notifications",
                                  routingKey: "harvester",
+                                 mandatory: false,
+                                 basicProperties: properties,
                                  body: body);
         }
     }
